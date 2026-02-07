@@ -1,20 +1,34 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# VibePoker Analytics
 
-# Run and deploy your AI Studio app
+Poker range equity and board analysis, powered by a Rust WASM engine and optional Gemini vision for table scanning.
 
-This contains everything you need to run your app locally.
+## Run locally
 
-View your app in AI Studio: https://ai.studio/apps/drive/1eMY-ctULRpIRjEqDGn1Alitcm_nqlgD_
+**Prerequisites:** Node.js 20+
 
-## Run Locally
+1. Install dependencies: `npm install`
+2. (Optional) For “Scan Board” image analysis, set `GEMINI_API_KEY` in Vercel or in `.env.local`. For local API: `vercel dev` (so `/api/analyze-board` is available).
+3. Run the app: `npm run dev`
 
-**Prerequisites:**  Node.js
+## Deploy on Vercel
 
+1. Push the repo and import the project in [Vercel](https://vercel.com).
+2. (Optional) In **Project → Settings → Environment Variables**, add `GEMINI_API_KEY` for board image analysis.
+3. Deploy; Vercel will use `vercel.json` (Vite + SPA rewrites) and run `npm run build`.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Build output is the `dist` folder; the `/api/analyze-board` serverless function runs on Vercel and keeps the API key server-side.
+
+## WASM poker engine
+
+Equity is computed by the in-repo Rust/WASM engine when built. To build it:
+
+- Install [Rust](https://rustup.rs) and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/).
+- From project root: `cd poker-engine && wasm-pack build --target web --out-dir pkg`
+- Commit the generated `poker-engine/pkg` (or run this step in CI and persist artifacts) so the built app can load it.
+
+If the WASM build is not present, the app uses a built-in fallback equity estimate.
+
+## Tech stack
+
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS
+- **Engine:** Rust (WASM) for equity; optional Gemini API for board image analysis via `/api/analyze-board`

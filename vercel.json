@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/((?!assets/|_next/|.*\\.(?:js|css|wasm|ico|svg|png|jpg|jpeg|gif|webp|woff2?|ttf|eot)$).*)", "destination": "/index.html" }
+  ]
+}
