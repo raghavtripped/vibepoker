@@ -24,10 +24,11 @@ export const SKLANSKY_ORDER: string[] = [
 ];
 
 // Traditional deck: spades & clubs black, hearts & diamonds red
+// Use ! to force override parent text-slate-900 in light mode
 export const SUIT_COLORS: Record<Suit, string> = {
   [Suit.Spades]: 'text-slate-900 dark:text-slate-100',
-  [Suit.Hearts]: 'text-red-600 dark:text-red-400',
-  [Suit.Diamonds]: 'text-red-600 dark:text-red-400',
+  [Suit.Hearts]: '!text-red-600 dark:!text-red-400',
+  [Suit.Diamonds]: '!text-red-600 dark:!text-red-400',
   [Suit.Clubs]: 'text-slate-900 dark:text-slate-100',
 };
 
