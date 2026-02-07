@@ -203,8 +203,10 @@ const CardSelector: React.FC<CardSelectorProps> = ({ cards, setCards, maxCards =
                         key={suit}
                         onClick={() => handleSuitSelect(suit)}
                         className={`
-                            h-12 rounded-lg text-2xl flex items-center justify-center transition-transform active:scale-95
-                            bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-500
+                            h-12 rounded-lg text-2xl font-bold flex items-center justify-center transition-transform active:scale-95
+                            bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600
+                            hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-500
+                            shadow-sm
                             ${SUIT_COLORS[suit]}
                         `}
                     >

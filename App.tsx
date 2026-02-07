@@ -46,8 +46,8 @@ function App() {
   const [results, setResults] = useState<SimulationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   
-  // Theme State
-  const [darkMode, setDarkMode] = useState(true);
+  // Theme State (default: light)
+  const [darkMode, setDarkMode] = useState(false);
 
   // Gemini State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -202,7 +202,7 @@ function App() {
             </div>
         )}
 
-        {/* Mobile order: 1 Board, 2 Hero/Villain, 3 Equity, 4 Range Config. Desktop: left = Range Config + Hero/Villain, right = Board + Equity */}
+        {/* Mobile order: 1 Board, 2 Hero/Villain, 3 Equity, 4 Recommendation, 5 Range Config. Desktop: left = Range Config + Hero/Villain, right = Board + Equity, then StrategyPanel full width */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Block 1: Board Cards — mobile first, desktop right column top */}
             <div className="order-1 lg:order-none lg:col-start-8 lg:col-span-5 lg:row-start-1 space-y-6">
@@ -256,8 +256,13 @@ function App() {
                 <StatsPanel results={results} loading={isCalculating} />
             </div>
 
-            {/* Block 4: Range Config (label + scenario manager) — mobile fourth, desktop left column top */}
-            <div className="order-4 lg:order-none lg:col-span-7 lg:row-start-1 space-y-4">
+            {/* Block 4: Recommendation (Strategy Panel) — mobile fourth, desktop full width row 3 */}
+            <div className="order-4 lg:order-none lg:col-span-12 lg:row-start-3">
+                <StrategyPanel results={results} loading={isCalculating} />
+            </div>
+
+            {/* Block 5: Range Config (label + scenario manager) — mobile fifth (below recommendation), desktop left column top */}
+            <div className="order-5 lg:order-none lg:col-span-7 lg:row-start-1 space-y-4">
                 <SectionInfo 
                     title="Range Configuration" 
                     icon={<LayoutGrid size={16} className="text-emerald-500" />}
@@ -329,9 +334,6 @@ function App() {
                 </div>
             </div>
         </div>
-
-        {/* Strategy Panel moved to bottom */}
-        <StrategyPanel results={results} loading={isCalculating} />
 
       </main>
     </div>

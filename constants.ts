@@ -23,12 +23,12 @@ export const SKLANSKY_ORDER: string[] = [
   "65s", "54s", "43s", "32s"
 ];
 
-// Suit text colors: spades visible in dark mode; hearts/diamonds/clubs distinct in light and dark
+// Traditional deck: spades & clubs black, hearts & diamonds red
 export const SUIT_COLORS: Record<Suit, string> = {
   [Suit.Spades]: 'text-slate-900 dark:text-slate-100',
   [Suit.Hearts]: 'text-red-600 dark:text-red-400',
-  [Suit.Diamonds]: 'text-blue-600 dark:text-blue-400',
-  [Suit.Clubs]: 'text-green-600 dark:text-green-400',
+  [Suit.Diamonds]: 'text-red-600 dark:text-red-400',
+  [Suit.Clubs]: 'text-slate-900 dark:text-slate-100',
 };
 
 export const SUIT_SYMBOLS: Record<Suit, string> = {
