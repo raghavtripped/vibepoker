@@ -3,6 +3,7 @@ import PokerGrid from './components/PokerGrid';
 import CardSelector from './components/CardSelector';
 import StatsPanel from './components/StatsPanel';
 import StrategyPanel from './components/StrategyPanel';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { calculateEquity } from './services/pokerEngine';
 import { analyzePokerTable } from './services/geminiService';
 import { getScenarios, saveScenario, deleteScenario, exportScenariosToJSON } from './services/storageService';
@@ -253,12 +254,16 @@ function App() {
                     icon={<Calculator size={16} className="text-emerald-500" />}
                     tooltip="Real-time equity calculation comparing the selected Hero Range against the Villain Range on the current board."
                 />
-                <StatsPanel results={results} loading={isCalculating} />
+                <ErrorBoundary>
+                  <StatsPanel results={results} loading={isCalculating} />
+                </ErrorBoundary>
             </div>
 
             {/* Block 4: Recommendation (Strategy Panel) — mobile fourth, desktop full width row 3 */}
             <div className="order-4 lg:order-none lg:col-span-12 lg:row-start-3">
-                <StrategyPanel results={results} loading={isCalculating} />
+                <ErrorBoundary>
+                  <StrategyPanel results={results} loading={isCalculating} />
+                </ErrorBoundary>
             </div>
 
             {/* Block 5: Range Config (label + scenario manager) — mobile fifth (below recommendation), desktop left column top */}

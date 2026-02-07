@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Rank, Suit } from '../types';
 import { SUITS, RANKS, SUIT_COLORS, SUIT_SYMBOLS } from '../constants';
 import { X, Trash2, HelpCircle, RefreshCcw } from 'lucide-react';
@@ -14,42 +14,46 @@ const CardSelector: React.FC<CardSelectorProps> = ({ cards, setCards, maxCards =
   const [selectedRank, setSelectedRank] = useState<Rank | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [duplicateError, setDuplicateError] = useState(false);
+  const [removingIndex, setRemovingIndex] = useState<number | null>(null);
 
-  const handleRankSelect = (rank: Rank) => {
-    // If board is full and not editing, prevent selection
+  const handleRankSelect = useCallback((rank: Rank) => {
     if (cards.length >= maxCards && editingIndex === null) return;
     setSelectedRank(rank);
-  };
+  }, [cards.length, maxCards, editingIndex]);
 
-  const handleSuitSelect = (suit: Suit) => {
+  const handleSuitSelect = useCallback((suit: Suit) => {
     if (!selectedRank) return;
-    
-    // Check for duplicates (ignoring the card currently being edited)
+
     if (cards.some((c, idx) => idx !== editingIndex && c.rank === selectedRank && c.suit === suit)) {
-        setSelectedRank(null);
-        return;
+      setDuplicateError(true);
+      setTimeout(() => setDuplicateError(false), 500);
+      return;
     }
 
     const newCards = [...cards];
     if (editingIndex !== null) {
-        // Replace existing card
-        newCards[editingIndex] = { rank: selectedRank, suit };
-        setEditingIndex(null);
+      newCards[editingIndex] = { rank: selectedRank, suit };
+      setEditingIndex(null);
     } else {
-        // Add new card
-        newCards.push({ rank: selectedRank, suit });
+      newCards.push({ rank: selectedRank, suit });
     }
-    
     setCards(newCards);
-    setSelectedRank(null); 
-  };
+    setSelectedRank(null);
+  }, [selectedRank, cards, editingIndex, setCards]);
 
-  const removeCard = (index: number) => {
-    const newCards = [...cards];
-    newCards.splice(index, 1);
-    setCards(newCards);
-    if (editingIndex === index) setEditingIndex(null);
-  };
+  const removeCard = useCallback((index: number) => {
+    setRemovingIndex(index);
+    setTimeout(() => {
+      setCards(prev => {
+        const next = [...prev];
+        next.splice(index, 1);
+        return next;
+      });
+      setRemovingIndex(null);
+      setEditingIndex(prev => (prev === index ? null : prev));
+    }, 200);
+  }, [setCards]);
 
   const handleSlotClick = (index: number) => {
       // Toggle editing mode for this slot
@@ -67,6 +71,31 @@ const CardSelector: React.FC<CardSelectorProps> = ({ cards, setCards, maxCards =
     setSelectedRank(null);
     setEditingIndex(null);
   };
+
+  // Keyboard navigation: number keys and A,K,Q,J,T for ranks
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const keypadVisible = cards.length < maxCards || editingIndex !== null;
+      const target = e.target as HTMLElement;
+      if (!keypadVisible || target.closest('input, textarea, [contenteditable]')) return;
+      if (e.repeat) return;
+
+      const rankKey = e.key.toUpperCase();
+      if (RANKS.includes(rankKey as Rank)) {
+        e.preventDefault();
+        handleRankSelect(rankKey as Rank);
+        return;
+      }
+      // Suit shortcuts: 1=Spades, 2=Hearts, 3=Diamonds, 4=Clubs (when rank selected)
+      if (selectedRank && ['1', '2', '3', '4'].includes(e.key)) {
+        const suitMap: Record<string, Suit> = { '1': Suit.Spades, '2': Suit.Hearts, '3': Suit.Diamonds, '4': Suit.Clubs };
+        e.preventDefault();
+        handleSuitSelect(suitMap[e.key]);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cards.length, maxCards, editingIndex, selectedRank, handleRankSelect, handleSuitSelect]);
 
   // Render the 5 slots (Flop, Turn, River)
   const renderSlots = () => {
@@ -86,16 +115,20 @@ const CardSelector: React.FC<CardSelectorProps> = ({ cards, setCards, maxCards =
         if (i === 4) label = "River";
 
         if (card) {
+            const isRemoving = removingIndex === i;
             slotContent = (
-                <div className="flex flex-col items-center justify-center w-full h-full bg-white text-slate-900 rounded shadow-md relative group animate-in zoom-in duration-200 border border-slate-200 dark:border-transparent">
+                <div
+                  data-testid={`board-card-${i}`}
+                  className={`flex flex-col items-center justify-center w-full h-full bg-white text-slate-900 rounded shadow-md relative group border border-slate-200 dark:border-transparent transition-all duration-200 ${isRemoving ? 'opacity-0 scale-75' : 'animate-in zoom-in duration-200'}`}
+                >
                      <span className={`text-lg font-bold leading-none ${SUIT_COLORS[card.suit]}`}>{card.rank}</span>
                      <span className={`text-xl leading-none ${SUIT_COLORS[card.suit]}`}>{SUIT_SYMBOLS[card.suit]}</span>
-                     {/* Overlay for actions */}
+                     {/* Overlay for actions - min touch target 44px */}
                      <div className={`absolute inset-0 bg-slate-900/60 opacity-0 ${isEditing ? 'opacity-100' : 'group-hover:opacity-100'} flex items-center justify-center rounded transition-opacity gap-1`}>
-                        <div className="p-1 bg-slate-200 rounded-full hover:bg-white text-slate-900 cursor-pointer shadow-lg" onClick={(e) => { e.stopPropagation(); removeCard(i); }}>
+                        <button type="button" className="min-w-[44px] min-h-[44px] flex items-center justify-center p-1 bg-slate-200 rounded-full hover:bg-white text-slate-900 cursor-pointer shadow-lg touch-manipulation" onClick={(e) => { e.stopPropagation(); removeCard(i); }} aria-label={`Remove card ${i + 1}`}>
                             <X size={12} />
-                        </div>
-                        <div className="p-1 bg-emerald-500 rounded-full hover:bg-emerald-400 text-white cursor-pointer shadow-lg">
+                        </button>
+                        <div className="min-w-[44px] min-h-[44px] flex items-center justify-center p-1 bg-emerald-500 rounded-full hover:bg-emerald-400 text-white cursor-pointer shadow-lg touch-manipulation">
                             <RefreshCcw size={12} />
                         </div>
                      </div>
@@ -129,7 +162,7 @@ const CardSelector: React.FC<CardSelectorProps> = ({ cards, setCards, maxCards =
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-4" data-testid="card-selector">
       {/* Header & Slots */}
       <div className="flex flex-col gap-3">
         <div className="flex justify-between items-center px-1">
@@ -162,9 +195,15 @@ const CardSelector: React.FC<CardSelectorProps> = ({ cards, setCards, maxCards =
 
       {/* Input Keypad */}
       {cards.length < maxCards || editingIndex !== null ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700 shadow-xl space-y-3 animate-in slide-in-from-top-2 fade-in relative overflow-hidden">
+          <div
+            data-testid="card-selector-keypad"
+            className={`bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700 shadow-xl space-y-3 animate-in slide-in-from-top-2 fade-in relative overflow-hidden transition-transform duration-150 ${duplicateError ? 'animate-shake' : ''}`}
+          >
             {/* Instruction Banner */}
             <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 transition-opacity duration-300 ${selectedRank ? 'opacity-100' : 'opacity-0'}`} />
+            {duplicateError && (
+              <p className="text-xs text-rose-600 dark:text-rose-400 font-medium text-center py-1" role="alert">Duplicate card — pick another suit</p>
+            )}
             
             <div className="text-center pb-1">
                  <p className="text-[10px] text-slate-400 dark:text-slate-400 uppercase tracking-widest font-bold">
@@ -174,14 +213,16 @@ const CardSelector: React.FC<CardSelectorProps> = ({ cards, setCards, maxCards =
                  </p>
             </div>
 
-            {/* Rank Grid */}
+            {/* Rank Grid - min 44px touch targets on mobile */}
             <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 sm:gap-2">
                 {RANKS.map((rank) => (
                     <button
                         key={rank}
+                        type="button"
+                        data-testid={`rank-${rank}`}
                         onClick={() => handleRankSelect(rank)}
                         className={`
-                            h-10 sm:h-11 rounded font-mono font-bold text-sm sm:text-base transition-all active:scale-95
+                            min-h-[44px] h-11 sm:h-11 rounded font-mono font-bold text-sm sm:text-base transition-all active:scale-95 touch-manipulation
                             ${selectedRank === rank 
                                 ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] scale-105 z-10 border border-emerald-400' 
                                 : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-600'
@@ -193,7 +234,7 @@ const CardSelector: React.FC<CardSelectorProps> = ({ cards, setCards, maxCards =
                 ))}
             </div>
 
-            {/* Suit Row */}
+            {/* Suit Row - min 44px touch targets */}
             <div className={`
                 grid grid-cols-4 gap-2 transition-all duration-300
                 ${selectedRank ? 'opacity-100 translate-y-0' : 'opacity-40 translate-y-1 pointer-events-none grayscale'}
@@ -201,9 +242,11 @@ const CardSelector: React.FC<CardSelectorProps> = ({ cards, setCards, maxCards =
                 {SUITS.map((suit) => (
                     <button
                         key={suit}
+                        type="button"
+                        data-testid={`suit-${suit}`}
                         onClick={() => handleSuitSelect(suit)}
                         className={`
-                            h-12 rounded-lg text-2xl font-bold flex items-center justify-center transition-transform active:scale-95
+                            min-h-[48px] h-12 rounded-lg text-2xl font-bold flex items-center justify-center transition-transform active:scale-95 touch-manipulation
                             bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600
                             hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-500
                             shadow-sm
@@ -225,4 +268,4 @@ const CardSelector: React.FC<CardSelectorProps> = ({ cards, setCards, maxCards =
   );
 };
 
-export default CardSelector;
+export default React.memo(CardSelector);

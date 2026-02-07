@@ -3,6 +3,8 @@ import { SimulationResult } from '../types';
 import { TrendingUp, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, BookOpen, BrainCircuit } from 'lucide-react';
 import { POKER_GLOSSARY } from '../constants';
 
+const TRUNCATE_LENGTH = 500;
+
 interface StrategyPanelProps {
   results: SimulationResult | null;
   loading: boolean;
@@ -10,6 +12,7 @@ interface StrategyPanelProps {
 
 const StrategyPanel: React.FC<StrategyPanelProps> = ({ results, loading }) => {
   const [showDetails, setShowDetails] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   if (loading) {
      return (
@@ -22,13 +25,15 @@ const StrategyPanel: React.FC<StrategyPanelProps> = ({ results, loading }) => {
 
   if (!results) return null;
 
+  const shouldTruncate = results.detailedAnalysis.length > TRUNCATE_LENGTH;
+
   const relevantTerms = Object.keys(POKER_GLOSSARY).filter(term => {
     const textToCheck = (results.detailedAnalysis + results.insights.join(' ') + results.recommendation).toLowerCase();
     return textToCheck.includes(term.toLowerCase());
   });
 
   return (
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden transition-all duration-500 animate-in fade-in slide-in-from-bottom-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden transition-opacity duration-300" data-testid="strategy-panel">
         {/* Horizontal Header Bar */}
         <div className="p-4 md:px-6 md:py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-8">
             
@@ -79,15 +84,26 @@ const StrategyPanel: React.FC<StrategyPanelProps> = ({ results, loading }) => {
         
         {/* Expandable Content */}
         {showDetails && (
-            <div className="border-t border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/30 p-4 md:p-6 animate-in slide-in-from-top-2">
+            <div className="border-t border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/30 p-4 md:p-6 transition-opacity duration-200">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
                     {/* Main Analysis Text */}
                     <div className="md:col-span-8 space-y-3">
                          <h4 className="text-xs text-emerald-600 dark:text-emerald-500 font-bold uppercase tracking-wider flex items-center gap-2 mb-2">
                             Engine Reasoning
                          </h4>
-                         <div className="text-sm text-slate-700 dark:text-slate-300 leading-7 font-medium p-4 bg-white dark:bg-slate-950/40 rounded-xl border border-slate-200 dark:border-slate-800/60 shadow-inner">
-                            {results.detailedAnalysis}
+                         <div className="text-sm text-slate-700 dark:text-slate-300 leading-7 font-medium p-4 bg-white dark:bg-slate-950/40 rounded-xl border border-slate-200 dark:border-slate-800/60 shadow-inner relative">
+                            <p className={!isExpanded && shouldTruncate ? 'line-clamp-4' : ''}>
+                              {results.detailedAnalysis}
+                            </p>
+                            {shouldTruncate && (
+                              <button
+                                type="button"
+                                onClick={() => setIsExpanded(!isExpanded)}
+                                className="mt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline focus:outline-none focus:ring-2 focus:ring-emerald-500/50 rounded"
+                              >
+                                {isExpanded ? 'Show less' : 'Read more'}
+                              </button>
+                            )}
                          </div>
                     </div>
 
@@ -98,7 +114,7 @@ const StrategyPanel: React.FC<StrategyPanelProps> = ({ results, loading }) => {
                                 <h4 className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-2 mb-2">
                                     <BookOpen size={12} /> Key Terminology
                                 </h4>
-                                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1" data-testid="strategy-glossary">
                                     {relevantTerms.map(term => (
                                         <div key={term} className="text-xs bg-white dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/40 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
                                             <span className="text-emerald-600 dark:text-emerald-400 font-bold block mb-1">{term}</span> 
@@ -116,4 +132,4 @@ const StrategyPanel: React.FC<StrategyPanelProps> = ({ results, loading }) => {
   );
 };
 
-export default StrategyPanel;
+export default React.memo(StrategyPanel);
