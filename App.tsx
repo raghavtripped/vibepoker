@@ -202,16 +202,67 @@ function App() {
             </div>
         )}
 
+        {/* Mobile order: 1 Board, 2 Hero/Villain, 3 Equity, 4 Range Config. Desktop: left = Range Config + Hero/Villain, right = Board + Equity */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            <div className="lg:col-span-7 space-y-4">
+            {/* Block 1: Board Cards — mobile first, desktop right column top */}
+            <div className="order-1 lg:order-none lg:col-start-8 lg:col-span-5 lg:row-start-1 space-y-6">
+                <CardSelector 
+                    label="Board Cards" 
+                    cards={board} 
+                    setCards={setBoard} 
+                    maxCards={5} 
+                />
+            </div>
+
+            {/* Block 2: Hero/Villain range selector — mobile second, desktop left column second row */}
+            <div className="order-2 lg:order-none lg:col-span-7 lg:row-start-2 space-y-4">
+                <div className="flex p-1 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <button 
+                        onClick={() => setActiveTab('hero')}
+                        className={`
+                            flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md flex items-center justify-center gap-2 transition-all
+                            ${activeTab === 'hero' ? 'bg-emerald-500 text-white dark:text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700/50'}
+                        `}
+                    >
+                        <User size={14} /> Hero Range
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('villain')}
+                        className={`
+                            flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md flex items-center justify-center gap-2 transition-all
+                            ${activeTab === 'villain' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700/50'}
+                        `}
+                    >
+                        <Skull size={14} /> Villain Range
+                    </button>
+                </div>
+                <div className="transition-all duration-300">
+                    <PokerGrid 
+                        key={activeTab} 
+                        selection={activeTab === 'hero' ? heroRange : villainRange} 
+                        setSelection={activeTab === 'hero' ? setHeroRange : setVillainRange}
+                        variant={activeTab}
+                    />
+                </div>
+            </div>
+
+            {/* Block 3: Equity & Hand Stats — mobile third, desktop right column second row */}
+            <div className="order-3 lg:order-none lg:col-start-8 lg:col-span-5 lg:row-start-2 space-y-2">
+                <SectionInfo 
+                    title="Equity & Hand Stats" 
+                    icon={<Calculator size={16} className="text-emerald-500" />}
+                    tooltip="Real-time equity calculation comparing the selected Hero Range against the Villain Range on the current board."
+                />
+                <StatsPanel results={results} loading={isCalculating} />
+            </div>
+
+            {/* Block 4: Range Config (label + scenario manager) — mobile fourth, desktop left column top */}
+            <div className="order-4 lg:order-none lg:col-span-7 lg:row-start-1 space-y-4">
                 <SectionInfo 
                     title="Range Configuration" 
                     icon={<LayoutGrid size={16} className="text-emerald-500" />}
                     tooltip="Configure the ranges for both Hero (You) and Villain (Opponent) to see who has the equity advantage."
                 />
-
-                {/* Scenario Manager */}
                 <div className="bg-white dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3 shadow-sm">
                     <div className="flex gap-2">
                         <input 
@@ -236,10 +287,9 @@ function App() {
                             <FolderOpen size={16} />
                         </button>
                     </div>
-
                     {showLibrary && (
                         <div className="animate-in slide-in-from-top-2 fade-in">
-                             <div className="max-h-60 overflow-y-auto space-y-1.5 custom-scrollbar mb-2">
+                            <div className="max-h-60 overflow-y-auto space-y-1.5 custom-scrollbar mb-2">
                                 {savedScenarios.length === 0 ? (
                                     <div className="text-center py-4 text-xs text-slate-500 italic">No saved scenarios yet.</div>
                                 ) : (
@@ -254,77 +304,28 @@ function App() {
                                                 <span className="text-[10px] text-slate-500">{new Date(scenario.timestamp).toLocaleDateString()}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                 <ChevronRight size={14} className="text-slate-400 dark:text-slate-600 group-hover:text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                 <button 
+                                                <ChevronRight size={14} className="text-slate-400 dark:text-slate-600 group-hover:text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <button 
                                                     onClick={(e) => handleDeleteScenario(scenario.id, e)}
                                                     className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-500/20 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                                                 >
+                                                >
                                                     <Trash2 size={14} />
-                                                 </button>
+                                                </button>
                                             </div>
                                         </div>
                                     ))
                                 )}
-                             </div>
-                             
-                             {savedScenarios.length > 0 && (
+                            </div>
+                            {savedScenarios.length > 0 && (
                                 <button 
                                     onClick={exportScenariosToJSON}
                                     className="w-full py-2 flex items-center justify-center gap-2 text-xs font-semibold text-slate-400 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 border-t border-slate-200 dark:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700/30 rounded-b-md transition-colors"
                                 >
                                     <Download size={14} /> Export All as JSON
                                 </button>
-                             )}
+                            )}
                         </div>
                     )}
-                </div>
-
-                <div className="flex p-1 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <button 
-                        onClick={() => setActiveTab('hero')}
-                        className={`
-                            flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md flex items-center justify-center gap-2 transition-all
-                            ${activeTab === 'hero' ? 'bg-emerald-500 text-white dark:text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700/50'}
-                        `}
-                    >
-                        <User size={14} /> Hero Range
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('villain')}
-                        className={`
-                            flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md flex items-center justify-center gap-2 transition-all
-                            ${activeTab === 'villain' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700/50'}
-                        `}
-                    >
-                        <Skull size={14} /> Villain Range
-                    </button>
-                </div>
-
-                <div className="transition-all duration-300">
-                    <PokerGrid 
-                        key={activeTab} 
-                        selection={activeTab === 'hero' ? heroRange : villainRange} 
-                        setSelection={activeTab === 'hero' ? setHeroRange : setVillainRange}
-                        variant={activeTab}
-                    />
-                </div>
-            </div>
-
-            <div className="lg:col-span-5 space-y-6">
-                <CardSelector 
-                    label="Board Cards" 
-                    cards={board} 
-                    setCards={setBoard} 
-                    maxCards={5} 
-                />
-                
-                <div className="space-y-2">
-                    <SectionInfo 
-                        title="Equity & Hand Stats" 
-                        icon={<Calculator size={16} className="text-emerald-500" />}
-                        tooltip="Real-time equity calculation comparing the selected Hero Range against the Villain Range on the current board."
-                    />
-                    <StatsPanel results={results} loading={isCalculating} />
                 </div>
             </div>
         </div>
